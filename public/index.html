@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>SSD OAuth Demo Application</title>
+
+    <!--    Injecting Bootstrap style sheets-->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css"
+          crossorigin="anonymous"
+          rel="stylesheet"
+          integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO">
+
+    <!--    Injecting Jquery library-->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <link rel="stylesheet" href="style-sheet.css">
+</head>
+
+<!--Starting the bod section-->
+<body class="text-center">
+
+<!--Header-->
+<div style="padding: 2px" class="container-fluid" >
+    <div class="jumbotron-fluid">
+        <h1 class="display-3">Explore your Google Drive Easily!</h1>
+        <p>
+            You can inspect the latest 7 files that you uploaded or were shared to you by Signing In below.
+        </p>
+        <div class="text-center">
+            <!--            Signing in button-->
+            <button id="btn_sign_in" class="btn-success btn btn-lg"  role="button">Google SIGN IN</button>
+            <!--            Signing out button-->
+            <button id="btn_sign_out" class="btn-warning btn btn-lg"  role="button">Sign Out</button>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col"></div>
+        <div class="col">
+            <br/>
+            <h4>Last 7 Files</h4>
+            <ul class="list-group" id="lst_fileList">
+                <!--                Data will be filled here in run time-->
+            </ul>
+            <div class="alert-info alert" role="alert" id="alert_loading_files_pending">
+                <strong>Waiting for Google..!</strong>
+            </div>
+        </div>
+        <div class="col"></div>
+    </div>
+    <pre id="pre_content"></pre>
+</div>
+
+<script type="text/javascript">
+
+    //Defining Client ID/OAUTH_APP_ID and API to identify application to the user
+    var OAUTH_APP_ID = '999155432204-qbsocs657li70e0bbiv554q3in9q8bh6.apps.googleusercontent.com';
+    var API_KEY = 'AIzaSyAlXNNggFnOzjzoeGAhVUlmIzjbRH3E05o';
+
+    // Google API for the Google Drive Content
+    var CONTENT_ARRAY = ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"];
+
+    // Required Auth Scope
+    var SCOPE = 'https://www.googleapis.com/auth/drive.metadata.readonly';
+
+    var btn_SignIn = document.getElementById('btn_sign_in');
+    var btn_SignOut = document.getElementById('btn_sign_out');
+
+    /**
+     *  Initialize the application on startup
+     *  Load Auth library and client API library
+     *  Initialize state listeners
+     */
+    function initApp() {
+        gapi.load('client:auth2', function () {
+            $("#alert_loading_files_pending").hide();
+
+            gapi.client.init({
+                apiKey: API_KEY,
+                clientId: OAUTH_APP_ID,
+                discoveryDocs: CONTENT_ARRAY,
+                scope: SCOPE
+            }).then(function () {
+
+                //Get Auth instance
+                var authInstance = gapi.auth2.getAuthInstance();
+
+                //Update view when user Sign In
+                authInstance.isSignedIn.listen(setUserLoginStatus);
+
+                //Handle the initial Sign In state for a new tab
+                setUserLoginStatus(authInstance.isSignedIn.get());
+
+                //Set functions for onclick event of Sign in and Sign out buttons
+                btn_SignIn.onclick = authenticateUser;
+                btn_SignOut.onclick = signOutUser;
+            });
+        });
+    }
+
+    /**
+     *  Set or Update user sign in status
+     */
+    function setUserLoginStatus(loggedInUser) {
+        if (loggedInUser) {
+            btn_SignIn.style.display = 'none';
+            btn_SignOut.style.display = 'inline-block';
+            listFiles();
+        } else {
+            btn_SignIn.style.display = 'inline-block';
+            btn_SignOut.style.display = 'none';
+        }
+    }
+
+    /**
+     *  Get called for the Sign in Button click event
+     */
+    function authenticateUser(event) {
+        gapi.auth2.getAuthInstance().signIn();
+    }
+
+    /**
+     *  Get called for the Sign out Button click event
+     */
+    function signOutUser(event) {
+        $("#lst_fileList").empty();
+        gapi.auth2.getAuthInstance().signOut();
+    }
+
+    /**
+     * Update the list tags in the page using the retrieved file name list from Google
+     */
+    function updateFileList(filename) {
+        $("#lst_fileList").append(
+            "<li class='list-group-item'>" + filename + "</li>"
+        );
+    }
+
+    /**
+     * Make visible the file list retrieved from Google and control the output as necessary
+     */
+    function listFiles() {
+        $("#alert_loading_files_pending").show();
+        gapi.client.drive.files.list({
+            'pageSize': 7,
+            'fields': "nextPageToken, files(id, name)"
+        }).then(function (res) {
+            $("#alert_loading_files_pending").hide();
+            var filelist = res.result.files;
+            if (filelist && filelist.length > 0) {
+                for (var x = 0; x < filelist.length; x++) {
+                    var file_entry = filelist[x];
+                    updateFileList(file_entry.name);
+                }
+            } else {
+                updateFileList('Sorry! You have no files in you Drive. Please upload and try again.');
+            }
+        });
+    }
+
+</script>
+
+<!--Script which is initially invoked on page load-->
+<script onload="this.onload=function(){};initApp()"
+        async defer src="https://apis.google.com/js/api.js"
+        onreadystatechange="if (this.readyState === 'complete') this.onload()">
+</script>
+
+<!--End of Body Section-->
+</body>
+
+</html>
