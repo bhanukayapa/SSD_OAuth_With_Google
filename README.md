@@ -11,6 +11,7 @@ Open a git terminal and execute : git clone https://github.com/bhanukayapa/SSD_O
 3. Execute following commands
 
 npm install
+
 npm start
 
 4. Application will automatically launch on http://localhost:8085/ URL by firing up your default web browser. Go to https://beyondjs.wordpress.com/2019/09/24/understanding-oauth-with-google-apis/ for more information.
